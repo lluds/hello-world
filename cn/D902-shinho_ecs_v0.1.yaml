@@ -1,0 +1,51 @@
+Parameters:
+  Cluster:
+    Type: String
+    Default: ECS01-Shinho-Cluster-UAT
+  Tag:
+    Type: String
+    Default: latest
+  DesiredCount:
+    Type: Number
+    Default: 1
+
+Resources:
+  Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2008-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: ecs.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole'
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: ECS01-Shinho-Cluster-UAT
+      DesiredCount: 1
+      TaskDefinition: !Ref TaskDefinition
+      Role: !Ref Role
+      LoadBalancers:
+        - ContainerName: webapp-container
+          ContainerPort: 5000
+          TargetGroupArn: arn:aws-cn:elasticloadbalancing:cn-north-1:541699087960:targetgroup/webapp-tg/5b81e5fa04739bed
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${AWS::StackName}-webapp-task
+      ContainerDefinitions:
+        - Name: webapp-container 
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com.cn/webapp:${Tag}
+          Essential: true
+          Memory: 128
+          PortMappings:
+            - ContainerPort: 5000
+          Environment:
+            - Name: Tag
+              Value: !Ref Tag
+
